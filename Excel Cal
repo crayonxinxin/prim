@@ -1,0 +1,139 @@
+'''
+Description: 
+Author: CrayonXiaoxin
+Date: 2024-09-10 09:49:17
+LastEditTime: 2024-09-10 15:50:30
+LastEditors:  
+'''
+import os
+import openpyxl
+from datetime import datetime
+
+def cal_time(name,workbook):
+    Sheet = workbook[name]
+    row = Sheet.max_row
+    sum_time = 0
+    delay_time = 0
+    print(name)
+    for i in range(2,row):
+        if Sheet.cell(i,7).value not in [None, '']:
+            begin_time1 = datetime.strptime(Sheet.cell(i,7).value,"%Y-%m-%d %H:%M")
+            end_time1 = datetime.strptime(Sheet.cell(i,8).value,"%Y-%m-%d %H:%M")
+            if Sheet.cell(i,9).value not in [None, '']:
+                begin_time2 = datetime.strptime(Sheet.cell(i,9).value,"%Y-%m-%d %H:%M")
+                #print(begin_time2)
+                if Sheet.cell(i,10).value not in [None,'']:
+                    end_time2 = datetime.strptime(Sheet.cell(i,10).value,"%Y-%m-%d %H:%M")
+                    if begin_time2 > begin_time1:
+                        if((begin_time2 - begin_time1).total_seconds() / 60 > 60):
+                            sum_time -= 0.5
+                        else:
+                            delay_time += (begin_time2 - begin_time1).total_seconds() / 60
+                    if end_time1 > end_time2:
+                        if((end_time1 - end_time2).total_seconds() / 60 > 60):
+                            sum_time -= 0.5
+                        else:
+                            delay_time += (end_time1 - end_time2).total_seconds() / 60
+
+                    mid_time = begin_time1.replace(hour=16, minute=0, second=0, microsecond=0)
+                    if end_time1 < mid_time:
+                        sum_time += 0.5
+                    else:
+                        sum_time += 1
+        else:
+            if Sheet.cell(i,9).value not in [None,'']:
+                begin_time2 = datetime.strptime(Sheet.cell(i,9).value,"%Y-%m-%d %H:%M")
+                if Sheet.cell(i,10).value not in [None,'']:
+                    end_time2 = datetime.strptime(Sheet.cell(i,10).value,"%Y-%m-%d %H:%M")
+                    begin_ = begin_time2.replace(hour=10, minute=0, second=0, microsecond=0)
+                    end_ = begin_time2.replace(hour=18,minute=0,second=0,microsecond=0)
+                    if begin_time2 > begin_:
+                        begin_ = begin_time2
+                    if end_time2 < end_:
+                        end_ = end_time2
+
+                    sum_ = (end_ - begin_).total_seconds() / 60
+                    if(sum_ >= 480):
+                        sum_time += 1
+                    else:
+                        sum_time += 0.5      
+    sum_time -= delay_time // 100
+    return sum_time,delay_time
+
+
+def main():
+    path = os.path.dirname(__file__)
+    os.chdir(path)
+    print(path)
+    # 检查文件是否存在
+    file_name = input("请输入文件名：")
+    # file_name = '1.xlsx'
+    if not os.path.exists(file_name):
+        raise FileNotFoundError(f"文件 {file_name} 不存在！")
+
+    workbook = openpyxl.load_workbook(file_name)
+    print(workbook.sheetnames)
+    sheet1 = input("请输入主表名字：")
+    # 获取 Sheet1（假设其名字是 '1'）
+    if sheet1 not in workbook.sheetnames:
+        raise ValueError("找不到名为 %s 的工作表"%sheet1)
+
+    sheet = workbook[sheet1]
+    rows = sheet.max_row
+    column = sheet.max_column
+
+    # 获取表头
+    topName = []
+    for i in range(1, column+1):
+        topName.append(sheet.cell(1, i).value)
+    names = []
+    # 自定义分类名称
+    for i in range(1,1000):
+        name = input("请输入要整理的名字：(如果想结束请输入#)")
+        if name == '#':
+            break
+        names.append(name)
+    
+
+    # 创建新的 Sheet
+    for name in names:
+        if name not in workbook.sheetnames:
+            workbook.create_sheet(name)
+    
+    # 创建时间汇总 Sheet
+    workbook.create_sheet('时间汇总')
+    workbook['时间汇总'].cell(1,1,'名字')
+    workbook['时间汇总'].cell(1,2,'时间')
+    # 按分类写入数据
+    for i in range(2, rows+1):  # 从第2行开始读取，因为第1行是表头
+        name = sheet.cell(i, 2).value
+        if name in names:
+            viceSheet = workbook[name]
+            values = [sheet.cell(i, j).value for j in range(1, column+1)]
+            vicerows = viceSheet.max_row
+            #print(vicerows)
+            if vicerows == 1:
+                # 如果新建的表是空的，首先写入表头
+                for l in range(1, column+1):
+                    viceSheet.cell(1, l, topName[l-1])
+                vicerows = 1
+            for k in range(1, column+1):
+                viceSheet.cell(vicerows + 1, k, values[k-1])
+
+    # 计算时间
+    for name in names:
+        t,delay_t = cal_time(name,workbook)
+        viceSheet = workbook[name]
+        viceSheet.cell(viceSheet.max_row + 1,1,'出勤'+str(t)+'天')
+        viceSheet.cell(viceSheet.max_row,2,'迟到'+str(delay_t)+'分钟')
+        TimeSheet = workbook['时间汇总']
+        TimeSheetRow = TimeSheet.max_row
+        TimeSheet.cell(TimeSheetRow+1,1,name)
+        TimeSheet.cell(TimeSheetRow+1,2,t)
+    # 保存并关闭文件
+    workbook.save(file_name)
+    workbook.close()
+
+
+if __name__ == '__main__':
+    main()
