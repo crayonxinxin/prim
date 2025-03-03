@@ -15,7 +15,7 @@ def cal_time(name,workbook):
     sum_time = 0
     delay_time = 0
     print(name)
-    for i in range(2,row):
+    for i in range(2,row+1):
         if Sheet.cell(i,7).value not in [None, '']:
             begin_time1 = datetime.strptime(Sheet.cell(i,7).value,"%Y-%m-%d %H:%M")
             end_time1 = datetime.strptime(Sheet.cell(i,8).value,"%Y-%m-%d %H:%M")
@@ -35,28 +35,25 @@ def cal_time(name,workbook):
                         else:
                             delay_time += (end_time1 - end_time2).total_seconds() / 60
 
-                    mid_time = begin_time1.replace(hour=16, minute=0, second=0, microsecond=0)
-                    if end_time1 < mid_time:
-                        sum_time += 0.5
-                    else:
+                    sum_ = (end_time2 - begin_time1).total_seconds() / 60
+
+                    if (sum_>=360 and begin_time1 < begin_time1.replace(hour = 12,minute = 0,second = 0)):
                         sum_time += 1
+                    else:
+                        sum_time += 0.5
         else:
             if Sheet.cell(i,9).value not in [None,'']:
                 begin_time2 = datetime.strptime(Sheet.cell(i,9).value,"%Y-%m-%d %H:%M")
                 if Sheet.cell(i,10).value not in [None,'']:
                     end_time2 = datetime.strptime(Sheet.cell(i,10).value,"%Y-%m-%d %H:%M")
-                    begin_ = begin_time2.replace(hour=10, minute=0, second=0, microsecond=0)
-                    end_ = begin_time2.replace(hour=18,minute=0,second=0,microsecond=0)
-                    if begin_time2 > begin_:
-                        begin_ = begin_time2
-                    if end_time2 < end_:
-                        end_ = end_time2
-
-                    sum_ = (end_ - begin_).total_seconds() / 60
-                    if(sum_ >= 480):
+                    
+                    sum_ = (end_time2 - begin_time1).total_seconds() / 60
+                    if(sum_>=360):
                         sum_time += 1
                     else:
-                        sum_time += 0.5      
+                        sum_time += 0.5
+                    
+        print(sum_time)  
     sum_time -= delay_time // 100
     return sum_time,delay_time
 
