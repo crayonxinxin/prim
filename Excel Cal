@@ -47,14 +47,14 @@ def cal_time(name,workbook):
                 if Sheet.cell(i,10).value not in [None,'']:
                     end_time2 = datetime.strptime(Sheet.cell(i,10).value,"%Y-%m-%d %H:%M")
                     
-                    sum_ = (end_time2 - begin_time1).total_seconds() / 60
+                    sum_ = (end_time2 - begin_time2).total_seconds() / 60
                     if(sum_>=360):
                         sum_time += 1
                     else:
                         sum_time += 0.5
                     
         print(sum_time)  
-    sum_time -= delay_time // 100
+    sum_time -= (delay_time // 100) * 0.5
     return sum_time,delay_time
 
 
